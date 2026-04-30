@@ -52,7 +52,7 @@ Error SMClient::Start()
 {
     std::lock_guard lock {mMutex};
 
-    LOG_DBG() << "Start SM client";
+    LOG_DBG() << "Start SM client. New version.";
 
     if (!mStopped) {
         return AOS_ERROR_WRAP(Error(ErrorEnum::eFailed, "client already started"));
