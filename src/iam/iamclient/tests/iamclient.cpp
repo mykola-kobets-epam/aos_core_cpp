@@ -441,7 +441,7 @@ protected:
     std::unique_ptr<IAMClient> CreateClient(
         [[maybe_unused]] bool provisionMode, [[maybe_unused]] const config::IAMClientConfig& config = GetConfig())
     {
-        EXPECT_CALL(mTLSCredentialsMock, GetTLSClientCredentials())
+        EXPECT_CALL(mTLSCredentialsMock, GetTLSClientCredentials(_))
             .WillRepeatedly(Return(aos::RetWithError<std::shared_ptr<grpc::ChannelCredentials>> {
                 grpc::InsecureChannelCredentials(), aos::ErrorEnum::eNone}));
 
