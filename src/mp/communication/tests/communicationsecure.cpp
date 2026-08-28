@@ -56,7 +56,8 @@ public:
         return {nullptr, ErrorEnum::eNone};
     }
 
-    RetWithError<std::shared_ptr<grpc::ChannelCredentials>> GetTLSClientCredentials() override
+    RetWithError<std::shared_ptr<grpc::ChannelCredentials>> GetTLSClientCredentials(
+        [[maybe_unused]] const String& certStorage) override
     {
         return {nullptr, ErrorEnum::eNone};
     }
@@ -155,10 +156,10 @@ protected:
 
         mKeyURI = keyURI;
 
-        auto [certPEM, err2] = common::utils::LoadPEMCertificates(certInfo.mCertURL, mCertLoader, mCryptoProvider);
+        auto [certs, err2] = common::utils::LoadPEMCertificates(certInfo.mCertURL, mCertLoader, mCryptoProvider);
         EXPECT_EQ(err2, ErrorEnum::eNone);
 
-        mCertPEM = certPEM;
+        mCertPEM = certs.mCertChain;
 
         mCommManagerClient.emplace(mClient.value());
 
