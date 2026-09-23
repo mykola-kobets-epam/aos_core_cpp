@@ -35,6 +35,13 @@ public:
         return ErrorEnum::eNone;
     }
 
+    Error GetRootCertType(String& certType) const override
+    {
+        certType = "rootcerts";
+
+        return ErrorEnum::eNone;
+    }
+
     Error SubscribeListener(const String& certType, CertListenerItf& certListener) override
     {
         (void)certType;

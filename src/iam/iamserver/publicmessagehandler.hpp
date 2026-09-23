@@ -146,6 +146,8 @@ private:
         ::iamanager::v7::CertInfo* response) override;
     ::grpc::Status GetAllCerts(::grpc::ServerContext* context, const ::iamanager::v7::GetCertRequest* request,
         ::iamanager::v7::CertInfoList* response) override;
+    ::grpc::Status GetRootCertType(::grpc::ServerContext* context, const ::google::protobuf::Empty* request,
+        ::iamanager::v7::RootCertType* response) override;
     ::grpc::Status SubscribeCertsChanged(::grpc::ServerContext* context,
         const ::iamanager::v7::SubscribeCertsChangedRequest*    request,
         ::grpc::ServerWriter<::iamanager::v7::CertInfoList>*    writer) override;

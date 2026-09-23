@@ -66,12 +66,16 @@ Error PublicCertService::Reconnect()
 
     LOG_INF() << "Reconnect public cert service";
 
-    auto [credentials, err] = mTLSCredentials->GetTLSClientCredentials();
-    if (!err.IsNone()) {
-        return err;
-    }
+    if (mInsecureConnection) {
+        mCredentials = grpc::InsecureChannelCredentials();
+    } else {
+        auto [credentials, err] = mTLSCredentials->GetTLSClientCredentials();
+        if (!err.IsNone()) {
+            return err;
+        }
 
-    mCredentials = credentials;
+        mCredentials = credentials;
+    }
 
     mStub = iamanager::v7::IAMPublicCertService::NewStub(
         grpc::CreateCustomChannel(mIAMPublicServerURL, mCredentials, common::utils::CreateGRPCChannelArguments()));
@@ -179,6 +183,32 @@ Error PublicCertService::GetCert(
 
     LOG_DBG() << "Certificate received" << Log::Field("certURL", resCert.mCertURL)
               << Log::Field("keyURL", resCert.mKeyURL);
+
+    return ErrorEnum::eNone;
+}
+
+Error PublicCertService::GetRootCertType(String& certType) const
+{
+    std::lock_guard lock {mMutex};
+
+    LOG_DBG() << "Get root certificate type";
+
+    auto ctx = std::make_unique<grpc::ClientContext>();
+    ctx->set_deadline(std::chrono::system_clock::now() + cServiceTimeout);
+    ctx->set_wait_for_ready(true);
+
+    google::protobuf::Empty     request;
+    iamanager::v7::RootCertType response;
+
+    if (auto status = mStub->GetRootCertType(ctx.get(), request, &response); !status.ok()) {
+        return Error(ErrorEnum::eRuntime, status.error_message().c_str());
+    }
+
+    if (auto err = certType.Assign(response.type().c_str()); !err.IsNone()) {
+        return AOS_ERROR_WRAP(err);
+    }
+
+    LOG_DBG() << "Root certificate type received" << Log::Field("certType", certType);
 
     return ErrorEnum::eNone;
 }

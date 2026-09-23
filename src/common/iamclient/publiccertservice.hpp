@@ -69,6 +69,14 @@ public:
     Error GetAllCerts(const String& certType, Array<CertInfo>& resCerts) const override;
 
     /**
+     * Returns the certificate type name of the root certificates module.
+     *
+     * @param[out] certType root certificate type name.
+     * @returns Error.
+     */
+    Error GetRootCertType(String& certType) const override;
+
+    /**
      * Subscribes certificates receiver.
      *
      * @param certType certificate type.

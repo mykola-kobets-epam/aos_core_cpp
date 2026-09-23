@@ -257,6 +257,24 @@ grpc::Status PublicMessageHandler::GetAllCerts([[maybe_unused]] grpc::ServerCont
     return grpc::Status::OK;
 }
 
+grpc::Status PublicMessageHandler::GetRootCertType([[maybe_unused]] grpc::ServerContext* context,
+    [[maybe_unused]] const google::protobuf::Empty* request, iamproto::RootCertType* response)
+{
+    LOG_DBG() << "Process get root cert type request";
+
+    StaticString<cCertTypeLen> certType;
+
+    if (auto err = mCertProvider->GetRootCertType(certType); !err.IsNone()) {
+        LOG_ERR() << "Failed to get root cert type: " << err;
+
+        return common::pbconvert::ConvertAosErrorToGrpcStatus(err);
+    }
+
+    response->set_type(certType.CStr());
+
+    return grpc::Status::OK;
+}
+
 grpc::Status PublicMessageHandler::SubscribeCertsChanged([[maybe_unused]] grpc::ServerContext* context,
     const iamanager::v7::SubscribeCertsChangedRequest* request, grpc::ServerWriter<iamanager::v7::CertInfoList>* writer)
 {
