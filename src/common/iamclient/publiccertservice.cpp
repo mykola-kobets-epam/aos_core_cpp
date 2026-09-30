@@ -158,6 +158,7 @@ Error PublicCertService::GetCert(
 
     auto ctx = std::make_unique<grpc::ClientContext>();
     ctx->set_deadline(std::chrono::system_clock::now() + cServiceTimeout);
+    ctx->set_wait_for_ready(true);
 
     iamanager::v7::GetCertRequest request;
     iamanager::v7::CertInfo       certInfoResponse;
@@ -221,6 +222,7 @@ Error PublicCertService::GetAllCerts(const String& certType, Array<CertInfo>& re
 
     auto ctx = std::make_unique<grpc::ClientContext>();
     ctx->set_deadline(std::chrono::system_clock::now() + cServiceTimeout);
+    ctx->set_wait_for_ready(true);
 
     iamanager::v7::GetCertRequest request;
     iamanager::v7::CertInfoList   response;
