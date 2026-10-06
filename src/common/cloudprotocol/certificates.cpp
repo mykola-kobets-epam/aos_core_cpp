@@ -98,6 +98,34 @@ void IssuedCertDataFromJSON(const common::utils::CaseInsensitiveObjectWrapper& j
     AOS_ERROR_CHECK_AND_THROW(err, "can't parse certificateChain");
 }
 
+void DesiredNodeRootCertificatesFromJSON(
+    const common::utils::CaseInsensitiveObjectWrapper& json, DesiredNodeRootCertificates& nodeRootCertificates)
+{
+    if (!json.Has("node")) {
+        AOS_ERROR_THROW(ErrorEnum::eInvalidArgument, "missing node tag");
+    }
+
+    AosIdentity identity;
+
+    auto err = ParseAosIdentity(json.GetObject("node"), identity);
+    AOS_ERROR_CHECK_AND_THROW(err, "can't parse node");
+
+    if (!identity.mCodename.has_value()) {
+        AOS_ERROR_THROW(ErrorEnum::eNotFound, "node codename is missing");
+    }
+
+    err = nodeRootCertificates.mNodeID.Assign(identity.mCodename->c_str());
+    AOS_ERROR_CHECK_AND_THROW(err, "can't parse node ID");
+
+    common::utils::ForEach(json, "certificates", [&nodeRootCertificates](const auto& certJson) {
+        auto err = nodeRootCertificates.mCertificates.EmplaceBack();
+        AOS_ERROR_CHECK_AND_THROW(err, "can't parse root certificate");
+
+        err = nodeRootCertificates.mCertificates.Back().Assign(certJson.convert<std::string>().c_str());
+        AOS_ERROR_CHECK_AND_THROW(err, "can't parse root certificate");
+    });
+}
+
 void RenewCertDataFromJSON(const common::utils::CaseInsensitiveObjectWrapper& json, RenewCertData& renewCertData)
 {
     CertIdentFromJSON(json, renewCertData);
@@ -159,6 +187,28 @@ Error FromJSON(const common::utils::CaseInsensitiveObjectWrapper& json, IssuedUn
 
             IssuedCertDataFromJSON(
                 common::utils::CaseInsensitiveObjectWrapper(certJson), issuedUnitCerts.mCertificates.Back());
+        });
+    } catch (const std::exception& e) {
+        return common::utils::ToAosError(e);
+    }
+
+    return ErrorEnum::eNone;
+}
+
+Error FromJSON(
+    const common::utils::CaseInsensitiveObjectWrapper& json, DesiredUnitRootCertificates& desiredUnitRootCertificates)
+{
+    try {
+        if (auto err = FromJSON(json, static_cast<Protocol&>(desiredUnitRootCertificates)); !err.IsNone()) {
+            return AOS_ERROR_WRAP(err);
+        }
+
+        common::utils::ForEach(json, "nodeCertificates", [&desiredUnitRootCertificates](const auto& nodeCertsJson) {
+            auto err = desiredUnitRootCertificates.mNodeCertificates.EmplaceBack();
+            AOS_ERROR_CHECK_AND_THROW(err, "can't parse node certificates");
+
+            DesiredNodeRootCertificatesFromJSON(common::utils::CaseInsensitiveObjectWrapper(nodeCertsJson),
+                desiredUnitRootCertificates.mNodeCertificates.Back());
         });
     } catch (const std::exception& e) {
         return common::utils::ToAosError(e);
