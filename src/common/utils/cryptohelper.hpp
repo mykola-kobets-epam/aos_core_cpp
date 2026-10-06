@@ -15,6 +15,7 @@
 #include <core/common/crypto/itf/certloader.hpp>
 #include <core/common/crypto/itf/crypto.hpp>
 #include <core/common/iamclient/itf/certprovider.hpp>
+#include <core/common/types/certificates.hpp>
 
 namespace aos::common::utils {
 
@@ -46,6 +47,20 @@ RetWithError<std::string> LoadPEMCertificates(
  */
 RetWithError<std::string> LoadRootCertificates(const iamclient::CertProviderItf& certProvider,
     crypto::CertLoaderItf& certLoader, crypto::x509::ProviderItf& cryptoProvider,
+    const String& rootCertType = cRootCertType);
+
+/**
+ * Loads root certificates the same way gRPC/TLS does and calculates SHA-256 thumbnails.
+ *
+ * @param certProvider certificate provider.
+ * @param certLoader certificate loader.
+ * @param cryptoProvider crypto provider.
+ * @param[out] thumbnails SHA-256 thumbnails.
+ * @param rootCertType certificate type of the trusted root certificate storage.
+ * @return Error.
+ */
+Error CalcRootCertThumbnails(const iamclient::CertProviderItf& certProvider, crypto::CertLoaderItf& certLoader,
+    crypto::x509::ProviderItf& cryptoProvider, Array<SHA256Thumbnail>& thumbnails,
     const String& rootCertType = cRootCertType);
 
 /**

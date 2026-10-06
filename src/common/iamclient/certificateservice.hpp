@@ -68,6 +68,15 @@ public:
     Error UpdateRootCerts(const String& nodeID, const Array<StaticString<crypto::cCertPEMLen>>& pemCerts) override;
 
     /**
+     * Gets root certificate SHA-256 thumbnails.
+     *
+     * @param nodeID node ID.
+     * @param[out] thumbnails root certificate SHA-256 thumbnails.
+     * @returns Error.
+     */
+    Error GetRootCerts(const String& nodeID, Array<SHA256Thumbnail>& thumbnails) override;
+
+    /**
      * Reconnects to the server.
      *
      * @returns Error.
