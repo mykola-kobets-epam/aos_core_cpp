@@ -25,6 +25,7 @@ set(LIBRARIES
     aos::common::utils
     aos::common::config
     aos::common::cloudprotocol
+    aos::cm::rootcertificates
     Poco::Crypto
     Poco::Foundation
     Poco::Net

@@ -193,7 +193,8 @@ Error Communication::Init(const cm::config::Config& config,
     crypto::x509::ProviderItf& cryptoProvider, crypto::CryptoHelper& cryptoHelper, crypto::UUIDItf& uuidProvider,
     updatemanager::UpdateManagerItf& updateManager, storagestate::StateHandlerItf& stateHandler,
     smcontroller::LogProviderItf& logProvider, launcher::EnvVarHandlerItf& envVarHandler,
-    iamclient::CertHandlerItf& certHandler, iamclient::ProvisioningItf& provisioningHandler)
+    iamclient::CertHandlerItf& certHandler, iamclient::ProvisioningItf& provisioningHandler,
+    rootcertificates::DesiredRootCertificatesHandlerItf& rootCertificatesHandler)
 {
     LOG_DBG() << "Init communication";
 
@@ -213,6 +214,7 @@ Error Communication::Init(const cm::config::Config& config,
     mEnvVarHandler           = &envVarHandler;
     mCertHandler             = &certHandler;
     mProvisioningHandler     = &provisioningHandler;
+    mRootCertificatesHandler = &rootCertificatesHandler;
 
     mCloudHttpRequest.setMethod(Poco::Net::HTTPRequest::HTTP_GET);
     mCloudHttpRequest.setVersion(Poco::Net::HTTPMessage::HTTP_1_1);
@@ -1398,21 +1400,7 @@ void Communication::HandleMessage(const ResponseInfo& info, const DesiredUnitRoo
         LOG_ERR() << "Send ack failed" << Log::Field("txn", info.mTxn.c_str()) << Log::Field(err);
     }
 
-    if (desiredRootCerts.mNodeCertificates.IsEmpty()) {
-        LOG_WRN() << "No desired root certificates received";
-        return;
-    }
-
-    for (const auto& nodeRootCerts : desiredRootCerts.mNodeCertificates) {
-        LOG_DBG() << "Update root certificates" << Log::Field("nodeID", nodeRootCerts.mNodeID)
-                  << Log::Field("count", nodeRootCerts.mCertificates.Size());
-
-        if (auto err = mCertHandler->UpdateRootCerts(nodeRootCerts.mNodeID, nodeRootCerts.mCertificates);
-            !err.IsNone()) {
-            LOG_ERR() << "Update root certificates failed" << Log::Field("nodeID", nodeRootCerts.mNodeID)
-                      << Log::Field(err);
-        }
-    }
+    mRootCertificatesHandler->UpdateRootCerts(desiredRootCerts);
 }
 
 void Communication::HandleMessage(const ResponseInfo& info, const RenewCertsNotification& notification)
@@ -1606,6 +1594,26 @@ Error Communication::SendInstallUnitCertsConfirmation(const InstallUnitCertsConf
 
     try {
         if (auto err = EnqueueMessage(CreateMessageData(confirmation), true); !err.IsNone()) {
+            return AOS_ERROR_WRAP(err);
+        }
+    } catch (const std::exception& e) {
+        return common::utils::ToAosError(e);
+    }
+
+    return ErrorEnum::eNone;
+}
+
+Error Communication::SendUnitRootCertificates(const UnitRootCertificates& unitRootCertificates)
+{
+    if (unitRootCertificates.mNodeCertificates.IsEmpty()) {
+        return ErrorEnum::eNone;
+    }
+
+    LOG_DBG() << "Send unit root certificates" << Log::Field("isPartial", unitRootCertificates.mIsPartial)
+              << Log::Field("count", unitRootCertificates.mNodeCertificates.Size());
+
+    try {
+        if (auto err = EnqueueMessage(CreateMessageData(unitRootCertificates), false); !err.IsNone()) {
             return AOS_ERROR_WRAP(err);
         }
     } catch (const std::exception& e) {

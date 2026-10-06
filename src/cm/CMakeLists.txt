@@ -30,6 +30,7 @@ set(TARGET_PREFIX ${TARGET_PREFIX}_cm)
 # ######################################################################################################################
 
 add_subdirectory(app)
+add_subdirectory(rootcertificates)
 add_subdirectory(communication)
 add_subdirectory(config)
 add_subdirectory(database)

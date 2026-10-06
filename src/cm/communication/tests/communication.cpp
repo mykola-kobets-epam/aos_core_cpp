@@ -41,6 +41,7 @@
 #include "stubs/certprovider.hpp"
 #include "stubs/connectionsubscriber.hpp"
 #include "stubs/httpserver.hpp"
+#include "stubs/rootcertificateshandlerstub.hpp"
 
 using namespace testing;
 
@@ -237,7 +238,7 @@ public:
 
         auto err = mCommunication.Init(mConfig, mCurrentNodeInfoProviderMock, mIdentProviderMock, mCertProviderStub,
             mCertLoader, mCryptoProvider, mCryptoHelper, mUUIDProvider, mUpdateManagerMock, mStateHandlerMock,
-            mLogProviderMock, mEnvVarHandlerMock, mCertHandlerMock, mProvisioningMock);
+            mLogProviderMock, mEnvVarHandlerMock, mCertHandlerMock, mProvisioningMock, mRootCertificatesHandlerStub);
         ASSERT_TRUE(err.IsNone()) << tests::utils::ErrorToStr(err);
 
         err = mCommunication.SubscribeListener(mConnectionSubscriberStub);
@@ -340,18 +341,19 @@ protected:
     MessageQueue mCloudReceivedMessages;
     MessageQueue mCloudSendMessageQueue;
 
-    StaticString<cIDLen>                   mSystemID = "test_system_id";
-    StaticString<cIDLen>                   mNodeID   = "node0";
-    config::Config                         mConfig;
-    ConnectionSubscriberStub               mConnectionSubscriberStub;
-    iamclient::CurrentNodeInfoProviderMock mCurrentNodeInfoProviderMock;
-    iamclient::IdentProviderMock           mIdentProviderMock;
-    updatemanager::UpdateManagerMock       mUpdateManagerMock;
-    storagestate::StateHandlerMock         mStateHandlerMock;
-    smcontroller::LogProviderMock          mLogProviderMock;
-    launcher::EnvVarHandlerMock            mEnvVarHandlerMock;
-    iamclient::CertHandlerMock             mCertHandlerMock;
-    iamclient::ProvisioningMock            mProvisioningMock;
+    StaticString<cIDLen>                                 mSystemID = "test_system_id";
+    StaticString<cIDLen>                                 mNodeID   = "node0";
+    config::Config                                       mConfig;
+    ConnectionSubscriberStub                             mConnectionSubscriberStub;
+    iamclient::CurrentNodeInfoProviderMock               mCurrentNodeInfoProviderMock;
+    iamclient::IdentProviderMock                         mIdentProviderMock;
+    updatemanager::UpdateManagerMock                     mUpdateManagerMock;
+    storagestate::StateHandlerMock                       mStateHandlerMock;
+    smcontroller::LogProviderMock                        mLogProviderMock;
+    launcher::EnvVarHandlerMock                          mEnvVarHandlerMock;
+    iamclient::CertHandlerMock                           mCertHandlerMock;
+    iamclient::ProvisioningMock                          mProvisioningMock;
+    rootcertificates::DesiredRootCertificatesHandlerStub mRootCertificatesHandlerStub;
 
     std::optional<HTTPServer>     mDiscoveryServer;
     std::optional<HTTPServer>     mCloudServer;

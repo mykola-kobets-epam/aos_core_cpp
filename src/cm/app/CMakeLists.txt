@@ -26,6 +26,7 @@ set(LIBRARIES
     aos::cm::database
     aos::cm::iamclient
     aos::cm::networkmanager
+    aos::cm::rootcertificates
     aos::cm::smcontroller
     aos::cm::unitconfig
     aos::cm::utils
