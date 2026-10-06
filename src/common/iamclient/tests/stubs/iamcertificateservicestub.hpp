@@ -114,6 +114,13 @@ public:
         return mLastRootCerts;
     }
 
+    void SetRootCertThumbnails(const std::vector<std::string>& thumbnails)
+    {
+        std::lock_guard lock {mMutex};
+
+        mRootCertThumbnails = thumbnails;
+    }
+
     grpc::Status CreateKey([[maybe_unused]] grpc::ServerContext* context,
         const iamanager::v7::CreateKeyRequest* request, iamanager::v7::CreateKeyResponse* response) override
     {
@@ -172,6 +179,27 @@ public:
         return grpc::Status::OK;
     }
 
+    grpc::Status GetRootCerts([[maybe_unused]] grpc::ServerContext* context,
+        const iamanager::v7::GetRootCertsRequest* request, iamanager::v7::GetRootCertsResponse* response) override
+    {
+        std::lock_guard lock {mMutex};
+
+        mLastNodeID = request->node_id();
+
+        response->set_node_id(mLastNodeID);
+
+        for (const auto& thumbnail : mRootCertThumbnails) {
+            response->add_root_cert_thumbnails(thumbnail);
+        }
+
+        if (mHasError) {
+            response->mutable_error()->set_exit_code(mErrorExitCode);
+            response->mutable_error()->set_message(mErrorMessage);
+        }
+
+        return grpc::Status::OK;
+    }
+
 private:
     std::unique_ptr<grpc::Server> mServer;
     mutable std::mutex            mMutex;
@@ -187,6 +215,7 @@ private:
     std::string                   mLastPassword;
     std::string                   mLastPemCert;
     std::vector<std::string>      mLastRootCerts;
+    std::vector<std::string>      mRootCertThumbnails;
 };
 
 #endif

@@ -146,6 +146,34 @@ TEST_F(CertificateServiceTest, UpdateRootCertsWithError)
     EXPECT_STREQ(err.Message(), "Update root certs failed");
 }
 
+TEST_F(CertificateServiceTest, GetRootCerts)
+{
+    mStub->SetRootCertThumbnails({"aabbccdd", "11223344"});
+
+    aos::SHA256ThumbnailArray thumbnails;
+
+    auto err = mService->GetRootCerts("node4", thumbnails);
+
+    EXPECT_EQ(err, aos::ErrorEnum::eNone);
+    EXPECT_STREQ(mStub->GetLastNodeID().c_str(), "node4");
+    ASSERT_EQ(thumbnails.Size(), 2);
+    EXPECT_STREQ(thumbnails[0].CStr(), "aabbccdd");
+    EXPECT_STREQ(thumbnails[1].CStr(), "11223344");
+}
+
+TEST_F(CertificateServiceTest, GetRootCertsWithError)
+{
+    mStub->SetError(4, "Get root certs failed");
+
+    aos::SHA256ThumbnailArray thumbnails;
+
+    auto err = mService->GetRootCerts("node4", thumbnails);
+
+    EXPECT_NE(err, aos::ErrorEnum::eNone);
+    EXPECT_EQ(err.Errno(), 4);
+    EXPECT_STREQ(err.Message(), "Get root certs failed");
+}
+
 TEST_F(CertificateServiceTest, Reconnect)
 {
     auto err = mService->Reconnect();

@@ -53,6 +53,25 @@ std::string ConvertCertificatesToPEM(
 
 constexpr auto cMaxRootCerts = 8;
 
+Error HashCertificates(const Array<crypto::x509::Certificate>& certs, Array<SHA256Thumbnail>& thumbnails)
+{
+    for (const auto& cert : certs) {
+        unsigned char hash[SHA256_DIGEST_LENGTH];
+
+        SHA256(cert.mRaw.Get(), static_cast<int>(cert.mRaw.Size()), hash);
+
+        if (auto err = thumbnails.EmplaceBack(); !err.IsNone()) {
+            return AOS_ERROR_WRAP(err);
+        }
+
+        if (auto err = thumbnails.Back().ByteArrayToHex(Array<uint8_t>(hash, SHA256_DIGEST_LENGTH)); !err.IsNone()) {
+            return AOS_ERROR_WRAP(err);
+        }
+    }
+
+    return ErrorEnum::eNone;
+}
+
 RetWithError<EVP_PKEY*> LoadPrivateKey(const std::string& keyURL)
 {
     auto [pkcs11URL, createErr] = common::utils::CreatePKCS11URL(keyURL.c_str());
@@ -76,6 +95,29 @@ RetWithError<EVP_PKEY*> LoadPrivateKey(const std::string& keyURL)
     }
 
     return {pkey, ErrorEnum::eNone};
+}
+
+Error CalcRootCertThumbnails(
+    const std::string& rootCertsPem, crypto::x509::ProviderItf& cryptoProvider, Array<SHA256Thumbnail>& thumbnails)
+{
+    thumbnails.Clear();
+
+    if (rootCertsPem.empty()) {
+        return ErrorEnum::eNone;
+    }
+
+    auto certs = std::make_unique<StaticArray<crypto::x509::Certificate, cMaxRootCerts>>();
+    if (!certs) {
+        return AOS_ERROR_WRAP(ErrorEnum::eNoMemory);
+    }
+
+    const String pemBlob {rootCertsPem.c_str()};
+
+    if (auto err = cryptoProvider.PEMToX509Certs(pemBlob, *certs); !err.IsNone()) {
+        return AOS_ERROR_WRAP(err);
+    }
+
+    return HashCertificates(*certs, thumbnails);
 }
 
 } // namespace
@@ -140,6 +182,23 @@ RetWithError<std::string> LoadRootCertificates(const iamclient::CertProviderItf&
     } catch (const std::exception& e) {
         return {"", AOS_ERROR_WRAP(utils::ToAosError(e))};
     }
+}
+
+Error CalcRootCertThumbnails(const iamclient::CertProviderItf& certProvider, crypto::CertLoaderItf& certLoader,
+    crypto::x509::ProviderItf& cryptoProvider, Array<SHA256Thumbnail>& thumbnails, const String& rootCertType)
+{
+    auto [rootCertsPem, err] = LoadRootCertificates(certProvider, certLoader, cryptoProvider, rootCertType);
+    if (err.Is(ErrorEnum::eNotFound)) {
+        thumbnails.Clear();
+
+        return ErrorEnum::eNone;
+    }
+
+    if (!err.IsNone()) {
+        return AOS_ERROR_WRAP(err);
+    }
+
+    return CalcRootCertThumbnails(rootCertsPem, cryptoProvider, thumbnails);
 }
 
 std::string GetOpensslErrorString()
