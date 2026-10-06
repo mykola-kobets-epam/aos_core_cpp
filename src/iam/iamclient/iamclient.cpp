@@ -12,6 +12,7 @@
 
 #include <common/pbconvert/common.hpp>
 #include <common/pbconvert/iam.hpp>
+#include <common/utils/cryptohelper.hpp>
 #include <common/utils/exception.hpp>
 
 #include "iamclient.hpp"
@@ -23,13 +24,16 @@ namespace aos::iam::iamclient {
  **********************************************************************************************************************/
 
 Error IAMClient::Init(const config::IAMClientConfig& config, aos::iamclient::IdentProviderItf* identProvider,
-    aos::iamclient::CertProviderItf& certProvider, provisionmanager::ProvisionManagerItf& provisionManager,
+    aos::iamclient::CertProviderItf& certProvider, crypto::CertLoaderItf& certLoader,
+    crypto::x509::ProviderItf& cryptoProvider, provisionmanager::ProvisionManagerItf& provisionManager,
     common::iamclient::TLSCredentialsItf& tlsCredentials, currentnode::CurrentNodeHandlerItf& currentNodeHandler,
     bool provisioningMode)
 {
     mIdentProvider      = identProvider;
     mCurrentNodeHandler = &currentNodeHandler;
     mCertProvider       = &certProvider;
+    mCertLoader         = &certLoader;
+    mCryptoProvider     = &cryptoProvider;
     mProvisionManager   = &provisionManager;
     mCertStorage        = !provisioningMode ? config.mCertStorage : "";
 
@@ -106,6 +110,10 @@ Error IAMClient::ReceiveMessage(const iamanager::v7::IAMIncomingMessages& msg)
 
     if (msg.has_update_root_certs_request()) {
         return ProcessUpdateRootCerts(msg.update_root_certs_request());
+    }
+
+    if (msg.has_get_root_certs_request()) {
+        return ProcessGetRootCerts(msg.get_root_certs_request());
     }
 
     return AOS_ERROR_WRAP(ErrorEnum::eNotSupported);
@@ -402,6 +410,20 @@ Error IAMClient::ProcessUpdateRootCerts(const iamanager::v7::UpdateRootCertsRequ
     return SendUpdateRootCertsResponse(nodeID, err);
 }
 
+Error IAMClient::ProcessGetRootCerts(const iamanager::v7::GetRootCertsRequest& request)
+{
+    const String nodeID = request.node_id().c_str();
+
+    LOG_DBG() << "Process get root certs request: nodeID=" << nodeID;
+
+    SHA256ThumbnailArray thumbnails;
+
+    auto err = AOS_ERROR_WRAP(
+        common::utils::CalcRootCertThumbnails(*mCertProvider, *mCertLoader, *mCryptoProvider, thumbnails));
+
+    return SendGetRootCertsResponse(nodeID, thumbnails, err);
+}
+
 Error IAMClient::CheckCurrentNodeState(const std::optional<std::initializer_list<NodeState>>& allowedStates)
 {
     auto nodeInfo = std::make_unique<NodeInfo>();
@@ -483,6 +505,25 @@ Error IAMClient::SendUpdateRootCertsResponse(const String& nodeID, const Error& 
     auto&                              response = *outgoingMsg.mutable_update_root_certs_response();
 
     response.set_node_id(nodeID.CStr());
+    common::pbconvert::SetErrorInfo(error, response);
+
+    return SendMessage(outgoingMsg);
+}
+
+Error IAMClient::SendGetRootCertsResponse(
+    const String& nodeID, const Array<SHA256Thumbnail>& thumbnails, const Error& error)
+{
+    iamanager::v7::IAMOutgoingMessages outgoingMsg;
+    auto&                              response = *outgoingMsg.mutable_get_root_certs_response();
+
+    response.set_node_id(nodeID.CStr());
+
+    if (error.IsNone()) {
+        for (const auto& thumbnail : thumbnails) {
+            response.add_root_cert_thumbnails(thumbnail.CStr());
+        }
+    }
+
     common::pbconvert::SetErrorInfo(error, response);
 
     return SendMessage(outgoingMsg);

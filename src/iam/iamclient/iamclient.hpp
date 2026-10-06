@@ -13,6 +13,7 @@
 #include <core/common/iamclient/itf/certprovider.hpp>
 #include <core/common/iamclient/itf/identprovider.hpp>
 #include <core/common/tools/error.hpp>
+#include <core/common/types/certificates.hpp>
 #include <core/iam/currentnode/itf/currentnodehandler.hpp>
 #include <core/iam/provisionmanager/provisionmanager.hpp>
 
@@ -42,6 +43,8 @@ public:
      * @param config client configuration.
      * @param identProvider identification provider.
      * @param certProvider certificate provider.
+     * @param certLoader certificate loader.
+     * @param cryptoProvider crypto provider.
      * @param provisionManager provision manager.
      * @param tlsCredentials TLS credentials.
      * @param currentNodeHandler current node handler.
@@ -49,7 +52,8 @@ public:
      * @returns Error.
      */
     Error Init(const config::IAMClientConfig& config, aos::iamclient::IdentProviderItf* identProvider,
-        aos::iamclient::CertProviderItf& certProvider, provisionmanager::ProvisionManagerItf& provisionManager,
+        aos::iamclient::CertProviderItf& certProvider, crypto::CertLoaderItf& certLoader,
+        crypto::x509::ProviderItf& cryptoProvider, provisionmanager::ProvisionManagerItf& provisionManager,
         common::iamclient::TLSCredentialsItf& tlsCredentials, currentnode::CurrentNodeHandlerItf& currentNodeHandler,
         bool provisioningMode);
 
@@ -90,6 +94,7 @@ private:
     Error ProcessApplyCert(const iamanager::v7::ApplyCertRequest& request);
     Error ProcessGetCertTypes(const iamanager::v7::GetCertTypesRequest& request);
     Error ProcessUpdateRootCerts(const iamanager::v7::UpdateRootCertsRequest& request);
+    Error ProcessGetRootCerts(const iamanager::v7::GetRootCertsRequest& request);
 
     Error CheckCurrentNodeState(const std::optional<std::initializer_list<NodeState>>& allowedStates);
 
@@ -98,10 +103,13 @@ private:
         const Array<uint8_t>& serial, const Error& error);
     Error SendGetCertTypesResponse(const provisionmanager::CertTypes& types, const Error& error);
     Error SendUpdateRootCertsResponse(const String& nodeID, const Error& error);
+    Error SendGetRootCertsResponse(const String& nodeID, const Array<SHA256Thumbnail>& thumbnails, const Error& error);
 
     aos::iamclient::IdentProviderItf*      mIdentProvider      = nullptr;
     provisionmanager::ProvisionManagerItf* mProvisionManager   = nullptr;
     aos::iamclient::CertProviderItf*       mCertProvider       = nullptr;
+    crypto::CertLoaderItf*                 mCertLoader         = nullptr;
+    crypto::x509::ProviderItf*             mCryptoProvider     = nullptr;
     currentnode::CurrentNodeHandlerItf*    mCurrentNodeHandler = nullptr;
 
     std::string mCertStorage;

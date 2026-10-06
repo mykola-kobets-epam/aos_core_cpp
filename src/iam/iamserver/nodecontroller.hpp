@@ -188,6 +188,17 @@ public:
     grpc::Status UpdateRootCerts(const iamproto::UpdateRootCertsRequest* request,
         iamproto::UpdateRootCertsResponse* response, const std::chrono::seconds responseTimeout);
 
+    /**
+     * Sends get root certs request and waits for response with timeout.
+     *
+     * @param request get root certs request.
+     * @param[out] response get root certs response.
+     * @param responseTimeout response timeout.
+     * @return grpc::Status.
+     */
+    grpc::Status GetRootCerts(const iamproto::GetRootCertsRequest* request, iamproto::GetRootCertsResponse* response,
+        const std::chrono::seconds responseTimeout);
+
 private:
     NodeStreamHandler(NodeServerReaderWriter* stream, grpc::ServerContext* context,
         iam::nodemanager::NodeManagerItf* nodeManager, StreamRegistryItf* streamRegistry, bool isPublic);

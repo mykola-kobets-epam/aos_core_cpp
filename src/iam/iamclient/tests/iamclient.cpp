@@ -10,8 +10,10 @@
 #include <grpcpp/server_builder.h>
 
 #include <core/common/tests/mocks/certprovidermock.hpp>
+#include <core/common/tests/mocks/cryptomock.hpp>
 #include <core/common/tests/mocks/identprovidermock.hpp>
 #include <core/common/tests/utils/log.hpp>
+#include <core/iam/tests/mocks/certloadermock.hpp>
 #include <core/iam/tests/mocks/currentnodemock.hpp>
 #include <core/iam/tests/mocks/provisionmanagermock.hpp>
 
@@ -275,6 +277,12 @@ public:
 
                     OnUpdateRootCertsResponse(response.node_id(), response.error());
                     mResponseCV.notify_all();
+                } else if (incomingMsg.has_get_root_certs_response()) {
+                    const auto& response = incomingMsg.get_root_certs_response();
+
+                    OnGetRootCertsResponse(
+                        response.node_id(), ConvertFromProtoArray(response.root_cert_thumbnails()), response.error());
+                    mResponseCV.notify_all();
                 }
             }
         } catch (const std::exception& e) {
@@ -382,6 +390,15 @@ public:
         mStream->Write(request);
     }
 
+    void GetRootCertsRequest(const std::string& id)
+    {
+        iamanager::v7::IAMIncomingMessages request;
+
+        request.mutable_get_root_certs_request()->set_node_id(id);
+
+        mStream->Write(request);
+    }
+
     MOCK_METHOD(void, OnNodeInfo, (const iamanager::v7::NodeInfo& nodeInfo));
     MOCK_METHOD(void, OnStartProvisioningResponse, (const ::common::v2::ErrorInfo& errorInfo));
     MOCK_METHOD(void, OnFinishProvisioningResponse, (const ::common::v2::ErrorInfo& errorInfo));
@@ -395,6 +412,9 @@ public:
             const ::common::v2::ErrorInfo& errorInfo));
     MOCK_METHOD(void, OnCertTypesResponse, (const std::vector<std::string>& types));
     MOCK_METHOD(void, OnUpdateRootCertsResponse, (const std::string& nodeID, const ::common::v2::ErrorInfo& errorInfo));
+    MOCK_METHOD(void, OnGetRootCertsResponse,
+        (const std::string& nodeID, const std::vector<std::string>& rootCerts,
+            const ::common::v2::ErrorInfo& errorInfo));
 
     void WaitNodeInfo(const std::chrono::seconds& timeout = std::chrono::seconds(4))
     {
@@ -466,8 +486,8 @@ protected:
         auto client = std::make_unique<IAMClient>();
 
         assert(client
-                   ->Init(config, &mIdentProvider, mCertProvider, mProvisionManager, mTLSCredentialsMock,
-                       mCurrentNodeHandler, provisionMode)
+                   ->Init(config, &mIdentProvider, mCertProvider, mCertLoader, mCryptoProvider, mProvisionManager,
+                       mTLSCredentialsMock, mCurrentNodeHandler, provisionMode)
                    .IsNone());
 
         return client;
@@ -506,6 +526,8 @@ protected:
     aos::iamclient::IdentProviderMock           mIdentProvider;
     iam::provisionmanager::ProvisionManagerMock mProvisionManager;
     aos::iamclient::CertProviderMock            mCertProvider;
+    crypto::CertLoaderMock                      mCertLoader;
+    crypto::x509::ProviderMock                  mCryptoProvider;
     TLSCredentialsMock                          mTLSCredentialsMock;
     iam::currentnode::CurrentNodeHandlerMock    mCurrentNodeHandler;
 };
@@ -863,6 +885,22 @@ TEST_F(IAMClientTest, UpdateRootCerts)
     EXPECT_CALL(*server, OnUpdateRootCertsResponse(std::string(nodeInfo.mNodeID.CStr()), ::common::v2::ErrorInfo()));
 
     server->UpdateRootCertsRequest(nodeInfo.mNodeID.CStr(), {"root_cert1", "root_cert2"});
+    server->WaitResponse();
+
+    EXPECT_TRUE(client->Stop().IsNone());
+}
+
+TEST_F(IAMClientTest, GetRootCerts)
+{
+    auto [server, client] = InitTest(NodeStateEnum::eUnprovisioned);
+    NodeInfo nodeInfo     = DefaultNodeInfo(NodeStateEnum::eUnprovisioned);
+
+    EXPECT_CALL(mCertProvider, GetAllCerts).WillOnce(Return(ErrorEnum::eNone));
+    EXPECT_CALL(*server,
+        OnGetRootCertsResponse(
+            std::string(nodeInfo.mNodeID.CStr()), std::vector<std::string> {}, ::common::v2::ErrorInfo()));
+
+    server->GetRootCertsRequest(nodeInfo.mNodeID.CStr());
     server->WaitResponse();
 
     EXPECT_TRUE(client->Stop().IsNone());

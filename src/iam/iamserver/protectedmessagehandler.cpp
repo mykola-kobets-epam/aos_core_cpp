@@ -7,13 +7,12 @@
 
 #include <memory>
 
-#include <core/common/crypto/itf/x509.hpp>
 #include <core/common/tools/logger.hpp>
-#include <core/common/tools/string.hpp>
 #include <core/iam/certhandler/certhandler.hpp>
 
 #include <common/pbconvert/common.hpp>
 #include <common/pbconvert/iam.hpp>
+#include <common/utils/cryptohelper.hpp>
 
 #include "protectedmessagehandler.hpp"
 
@@ -36,11 +35,14 @@ const Error cStreamNotFoundError = {ErrorEnum::eNotFound, "stream not found"};
 Error ProtectedMessageHandler::Init(NodeController& nodeController, iamclient::IdentProviderItf& identProvider,
     iam::permhandler::PermHandlerItf& permHandler, iam::currentnode::CurrentNodeHandlerItf& currentNodeHandler,
     iam::nodemanager::NodeManagerItf& nodeManager, iamclient::CertProviderItf& certProvider,
+    crypto::CertLoaderItf& certLoader, crypto::x509::ProviderItf& cryptoProvider,
     iam::provisionmanager::ProvisionManagerItf& provisionManager)
 {
     LOG_DBG() << "Init message handler: handler=protected";
 
     mProvisionManager = &provisionManager;
+    mCertLoader       = &certLoader;
+    mCryptoProvider   = &cryptoProvider;
 
     return PublicMessageHandler::Init(
         nodeController, identProvider, permHandler, currentNodeHandler, nodeManager, certProvider);
@@ -338,6 +340,45 @@ grpc::Status ProtectedMessageHandler::UpdateRootCerts([[maybe_unused]] grpc::Ser
         common::pbconvert::SetErrorInfo(err, *response);
 
         return grpc::Status::OK;
+    }
+
+    return grpc::Status::OK;
+}
+
+grpc::Status ProtectedMessageHandler::GetRootCerts([[maybe_unused]] grpc::ServerContext* context,
+    const iamproto::GetRootCertsRequest* request, iamproto::GetRootCertsResponse* response)
+{
+    const auto& nodeID = request->node_id();
+
+    LOG_DBG() << "Process get root certs request: nodeID=" << nodeID.c_str();
+
+    response->set_node_id(nodeID);
+
+    if (!ProcessOnThisNode(nodeID)) {
+        return RequestWithRetry([&]() {
+            auto handler = GetNodeController()->GetNodeStreamHandler(nodeID);
+            if (!handler) {
+                return common::pbconvert::ConvertAosErrorToGrpcStatus(cStreamNotFoundError);
+            }
+
+            return handler->GetRootCerts(request, response, cDefaultTimeout);
+        });
+    }
+
+    SHA256ThumbnailArray thumbnails;
+
+    if (auto err
+        = common::utils::CalcRootCertThumbnails(*GetCertProvider(), *mCertLoader, *mCryptoProvider, thumbnails);
+        !err.IsNone()) {
+        LOG_ERR() << "Get root certs failed: error=" << err;
+
+        common::pbconvert::SetErrorInfo(err, *response);
+
+        return grpc::Status::OK;
+    }
+
+    for (const auto& thumbnail : thumbnails) {
+        response->add_root_cert_thumbnails(thumbnail.CStr());
     }
 
     return grpc::Status::OK;

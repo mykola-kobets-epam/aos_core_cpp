@@ -159,8 +159,8 @@ void AosCore::Init(const std::string& configFile, bool provisioning)
     if (!clientConfig.mMainIAMPublicServerURL.empty() && !clientConfig.mMainIAMProtectedServerURL.empty()) {
         mIAMClient = std::make_unique<iamclient::IAMClient>();
 
-        err = mIAMClient->Init(clientConfig, mIdentifier.get(), mCertHandler, mProvisionManager, mTLSCredentials,
-            mCurrentNodeHandler, mProvisioning);
+        err = mIAMClient->Init(clientConfig, mIdentifier.get(), mCertHandler, mCertLoader, mCryptoProvider,
+            mProvisionManager, mTLSCredentials, mCurrentNodeHandler, mProvisioning);
         AOS_ERROR_CHECK_AND_THROW(err, "can't initialize IAM client");
     }
 }
