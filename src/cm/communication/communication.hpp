@@ -278,6 +278,7 @@ private:
     void  HandleMessage(const ResponseInfo& info, const StartProvisioningRequest& request);
     void  HandleMessage(const ResponseInfo& info, const FinishProvisioningRequest& request);
     void  HandleMessage(const ResponseInfo& info, const DeprovisioningRequest& request);
+    void  HandleMessage(const ResponseInfo& info, const DesiredUnitRootCertificates& desiredRootCerts);
     void  HandleMessage(const ResponseInfo& info, const RenewCertsNotification& notification);
     void  HandleMessage(const ResponseInfo& info, const IssuedUnitCerts& certs);
     Error SendAndWaitResponse(const Message& msg, ResponseMessageVariantPtr& response);

@@ -41,9 +41,10 @@ namespace {
  * Types
  **********************************************************************************************************************/
 
-using ReceivedMessageVariant = std::variant<common::cloudprotocol::Ack, common::cloudprotocol::Nack, BlobURLsInfo,
-    DesiredStatus, RequestLog, StateAcceptance, UpdateState, RenewCertsNotification, IssuedUnitCerts,
-    OverrideEnvVarsRequest, StartProvisioningRequest, FinishProvisioningRequest, DeprovisioningRequest>;
+using ReceivedMessageVariant
+    = std::variant<common::cloudprotocol::Ack, common::cloudprotocol::Nack, BlobURLsInfo, DesiredStatus,
+        DesiredUnitRootCertificates, RequestLog, StateAcceptance, UpdateState, RenewCertsNotification, IssuedUnitCerts,
+        OverrideEnvVarsRequest, StartProvisioningRequest, FinishProvisioningRequest, DeprovisioningRequest>;
 
 /***********************************************************************************************************************
  * Statics
@@ -119,6 +120,13 @@ std::unique_ptr<ReceivedMessageVariant> ParseMessage(const common::utils::CaseIn
 
     case common::cloudprotocol::MessageTypeEnum::eUpdateState: {
         err = common::cloudprotocol::FromJSON(json, result->emplace<UpdateState>());
+        AOS_ERROR_CHECK_AND_THROW(err);
+
+        return result;
+    }
+
+    case common::cloudprotocol::MessageTypeEnum::eDesiredUnitRootCertificates: {
+        err = common::cloudprotocol::FromJSON(json, result->emplace<DesiredUnitRootCertificates>());
         AOS_ERROR_CHECK_AND_THROW(err);
 
         return result;
@@ -1379,6 +1387,31 @@ void Communication::HandleMessage(const ResponseInfo& info, const Deprovisioning
 
     if (auto err = SendProvisioningResponse(info.mCorrelationID, CreateMessageData(*response)); !err.IsNone()) {
         LOG_ERR() << "Send deprovisioning response failed" << Log::Field(err);
+    }
+}
+
+void Communication::HandleMessage(const ResponseInfo& info, const DesiredUnitRootCertificates& desiredRootCerts)
+{
+    LOG_DBG() << "Received desired unit root certificates message" << Log::Field("txn", info.mTxn.c_str());
+
+    if (auto err = SendAck(info.mTxn); !err.IsNone()) {
+        LOG_ERR() << "Send ack failed" << Log::Field("txn", info.mTxn.c_str()) << Log::Field(err);
+    }
+
+    if (desiredRootCerts.mNodeCertificates.IsEmpty()) {
+        LOG_WRN() << "No desired root certificates received";
+        return;
+    }
+
+    for (const auto& nodeRootCerts : desiredRootCerts.mNodeCertificates) {
+        LOG_DBG() << "Update root certificates" << Log::Field("nodeID", nodeRootCerts.mNodeID)
+                  << Log::Field("count", nodeRootCerts.mCertificates.Size());
+
+        if (auto err = mCertHandler->UpdateRootCerts(nodeRootCerts.mNodeID, nodeRootCerts.mCertificates);
+            !err.IsNone()) {
+            LOG_ERR() << "Update root certificates failed" << Log::Field("nodeID", nodeRootCerts.mNodeID)
+                      << Log::Field(err);
+        }
     }
 }
 

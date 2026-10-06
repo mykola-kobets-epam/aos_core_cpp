@@ -34,6 +34,16 @@ Error FromJSON(const common::utils::CaseInsensitiveObjectWrapper& json, RenewCer
 Error FromJSON(const common::utils::CaseInsensitiveObjectWrapper& json, IssuedUnitCerts& issuedUnitCerts);
 
 /**
+ * Converts JSON object to desired unit root certificates object.
+ *
+ * @param json json object representation.
+ * @param[out] desiredUnitRootCertificates desired unit root certificates object to fill.
+ * @return Error.
+ */
+Error FromJSON(
+    const common::utils::CaseInsensitiveObjectWrapper& json, DesiredUnitRootCertificates& desiredUnitRootCertificates);
+
+/**
  * Converts JSON object to issue unit certs object.
  *
  * @param json json object representation.
