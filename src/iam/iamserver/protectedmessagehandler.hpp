@@ -8,12 +8,13 @@
 #ifndef AOS_IAM_IAMSERVER_PROTECTEDMESSAGEHANDLER_HPP_
 #define AOS_IAM_IAMSERVER_PROTECTEDMESSAGEHANDLER_HPP_
 
-#include <array>
 #include <chrono>
 #include <string>
 
 #include <grpcpp/server_builder.h>
 
+#include <core/common/crypto/itf/certloader.hpp>
+#include <core/common/crypto/itf/crypto.hpp>
 #include <core/common/iamclient/itf/identprovider.hpp>
 #include <core/iam/certhandler/certhandler.hpp>
 #include <core/iam/permhandler/itf/permhandler.hpp>
@@ -49,11 +50,15 @@ public:
      * @param currentNodeHandler current node handler.
      * @param nodeManager node manager.
      * @param certProvider certificate provider.
+     * @param certLoader certificate loader.
+     * @param cryptoProvider crypto provider.
      * @param provisionManager provision manager.
+     * @return Error.
      */
     Error Init(NodeController& nodeController, aos::iamclient::IdentProviderItf& identProvider,
         iam::permhandler::PermHandlerItf& permHandler, iam::currentnode::CurrentNodeHandlerItf& currentNodeHandler,
         iam::nodemanager::NodeManagerItf& nodeManager, aos::iamclient::CertProviderItf& certProvider,
+        crypto::CertLoaderItf& certLoader, crypto::x509::ProviderItf& cryptoProvider,
         iam::provisionmanager::ProvisionManagerItf& provisionManager);
 
     /**
@@ -103,6 +108,8 @@ private:
     // IAMCertificateService interface
     grpc::Status UpdateRootCerts(grpc::ServerContext* context, const iamproto::UpdateRootCertsRequest* request,
         iamproto::UpdateRootCertsResponse* response) override;
+    grpc::Status GetRootCerts(grpc::ServerContext* context, const iamproto::GetRootCertsRequest* request,
+        iamproto::GetRootCertsResponse* response) override;
     grpc::Status CreateKey(grpc::ServerContext* context, const iamproto::CreateKeyRequest* request,
         iamproto::CreateKeyResponse* response) override;
     grpc::Status ApplyCert(grpc::ServerContext* context, const iamproto::ApplyCertRequest* request,
@@ -115,6 +122,8 @@ private:
         google::protobuf::Empty* response) override;
 
     iam::provisionmanager::ProvisionManagerItf* mProvisionManager = nullptr;
+    crypto::CertLoaderItf*                      mCertLoader       = nullptr;
+    crypto::x509::ProviderItf*                  mCryptoProvider   = nullptr;
 };
 
 } // namespace aos::iam::iamserver

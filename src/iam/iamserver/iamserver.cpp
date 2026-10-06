@@ -97,7 +97,7 @@ Error IAMServer::Init(const config::IAMServerConfig& config, certhandler::CertHa
     }
 
     if (err = mProtectedMessageHandler.Init(mNodeController, identProvider, permHandler, currentNodeHandler,
-            nodeManager, certProvider, provisionManager);
+            nodeManager, certProvider, certLoader, cryptoProvider, provisionManager);
         !err.IsNone()) {
         return AOS_ERROR_WRAP(err);
     }

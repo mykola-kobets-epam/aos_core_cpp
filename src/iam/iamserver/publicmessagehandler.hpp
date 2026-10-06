@@ -101,6 +101,7 @@ protected:
     NodeController*                          GetNodeController() { return mNodeController; }
     NodeInfo&                                GetNodeInfo() { return mNodeInfo; }
     iam::nodemanager::NodeManagerItf*        GetNodeManager() { return mNodeManager; }
+    aos::iamclient::CertProviderItf*         GetCertProvider() { return mCertProvider; }
     Error                                    SetNodeState(const std::string& nodeID, const NodeState& state);
     bool                                     ProcessOnThisNode(const std::string& nodeID);
 
