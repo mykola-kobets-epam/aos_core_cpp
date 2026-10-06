@@ -46,6 +46,7 @@ public:
         eStartProvisioningResponse,
         eStateAcceptance,
         eStateRequest,
+        eUnitRootCertificates,
         eUnitStatus,
         eUpdateState,
     };
@@ -78,6 +79,7 @@ public:
             "startProvisioningResponse",
             "stateAcceptance",
             "stateRequest",
+            "unitRootCertificates",
             "unitStatus",
             "updateState",
         };

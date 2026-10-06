@@ -71,7 +71,8 @@ void AosCore::Init(const std::string& configFile)
     // Initialize communication
 
     err = mCommunication.Init(mConfig, mIAMClient, mIAMClient, mIAMClient, mCertLoader, mCryptoProvider, mCryptoHelper,
-        mCryptoProvider, mUpdateManager, mStorageState, mSMController, mLauncher, mIAMClient, mIAMClient);
+        mCryptoProvider, mUpdateManager, mStorageState, mSMController, mLauncher, mIAMClient, mIAMClient,
+        mRootCertificatesHandler);
     AOS_ERROR_CHECK_AND_THROW(err, "can't initialize communication");
 
     InitDatabase();
@@ -99,6 +100,9 @@ void AosCore::Init(const std::string& configFile)
 
     err = mNodeInfoProvider.Init(mAllocator, mConfig.mNodeInfoProvider, mIAMClient);
     AOS_ERROR_CHECK_AND_THROW(err, "can't initialize node info provider");
+
+    err = mRootCertificatesHandler.Init(mIAMClient, mNodeInfoProvider, mCommunication, mCommunication);
+    AOS_ERROR_CHECK_AND_THROW(err, "can't initialize root certificates handler");
 
     err = mMonitoring.Init(mConfig.mMonitoring, mCommunication, mCommunication, mLauncher, mNodeInfoProvider);
     AOS_ERROR_CHECK_AND_THROW(err, "can't initialize monitoring");
@@ -224,6 +228,15 @@ void AosCore::Start()
     mCleanupManager.AddCleanup([this]() {
         if (auto err = mUpdateManager.Stop(); !err.IsNone()) {
             LOG_ERR() << "Can't stop update manager" << Log::Field(err);
+        }
+    });
+
+    err = mRootCertificatesHandler.Start();
+    AOS_ERROR_CHECK_AND_THROW(err, "can't start root certificates handler");
+
+    mCleanupManager.AddCleanup([this]() {
+        if (auto err = mRootCertificatesHandler.Stop(); !err.IsNone()) {
+            LOG_ERR() << "Can't stop root certificates handler" << Log::Field(err);
         }
     });
 

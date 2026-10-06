@@ -117,7 +117,7 @@ void DesiredNodeRootCertificatesFromJSON(
     err = nodeRootCertificates.mNodeID.Assign(identity.mCodename->c_str());
     AOS_ERROR_CHECK_AND_THROW(err, "can't parse node ID");
 
-    common::utils::ForEach(json, "certificates", [&nodeRootCertificates](const auto& certJson) {
+    common::utils::ForEach(json, "certificates", [&nodeRootCertificates](const Poco::Dynamic::Var& certJson) {
         auto err = nodeRootCertificates.mCertificates.EmplaceBack();
         AOS_ERROR_CHECK_AND_THROW(err, "can't parse root certificate");
 
@@ -269,6 +269,39 @@ Error ToJSON(const InstallUnitCertsConfirmation& confirmation, Poco::JSON::Objec
 
             return certJson;
         }));
+    } catch (const std::exception& e) {
+        return common::utils::ToAosError(e);
+    }
+
+    return ErrorEnum::eNone;
+}
+
+Error ToJSON(const UnitRootCertificates& unitRootCertificates, Poco::JSON::Object& json)
+{
+    constexpr MessageType cMessageType = MessageTypeEnum::eUnitRootCertificates;
+
+    try {
+        json.set("messageType", cMessageType.ToString().CStr());
+
+        if (auto err = ToJSON(static_cast<const Protocol&>(unitRootCertificates), json); !err.IsNone()) {
+            return AOS_ERROR_WRAP(err);
+        }
+
+        json.set("isPartial", unitRootCertificates.mIsPartial);
+
+        json.set("nodeCertificates",
+            common::utils::ToJsonArray(unitRootCertificates.mNodeCertificates, [](const auto& nodeRootCerts) {
+                auto nodeJson = Poco::makeShared<Poco::JSON::Object>(Poco::JSON_PRESERVE_KEY_ORDER);
+
+                AosIdentity identity;
+                identity.mCodename = nodeRootCerts.mNodeID.CStr();
+
+                nodeJson->set("node", CreateAosIdentity(identity));
+                nodeJson->set("sha256Thumbnails",
+                    common::utils::ToJsonArray(nodeRootCerts.mSHA256Thumbnails, common::utils::ToStdString));
+
+                return nodeJson;
+            }));
     } catch (const std::exception& e) {
         return common::utils::ToAosError(e);
     }

@@ -42,6 +42,7 @@
 #include <core/iam/certhandler/certhandler.hpp>
 
 #include <cm/config/config.hpp>
+#include <cm/rootcertificates/rootcertificateshandler.hpp>
 #include <common/cloudprotocol/servicediscovery.hpp>
 #include <common/cloudprotocol/status.hpp>
 #include <common/utils/json.hpp>
@@ -71,6 +72,7 @@ public:
      * @param envVarHandler environment variable handler.
      * @param certHandler certificate handler.
      * @param provisioningHandler provisioning handler.
+     * @param rootCertificatesHandler root certificates handler.
      * @return Error.
      */
     Error Init(const cm::config::Config& config, iamclient::CurrentNodeInfoProviderItf& currentNodeInfoProvider,
@@ -79,7 +81,8 @@ public:
         crypto::CryptoHelper& cryptoHelper, crypto::UUIDItf& uuidProvider,
         updatemanager::UpdateManagerItf& updateManager, storagestate::StateHandlerItf& stateHandler,
         smcontroller::LogProviderItf& logProvider, launcher::EnvVarHandlerItf& envVarHandler,
-        iamclient::CertHandlerItf& certHandler, iamclient::ProvisioningItf& provisioningHandler
+        iamclient::CertHandlerItf& certHandler, iamclient::ProvisioningItf& provisioningHandler,
+        rootcertificates::DesiredRootCertificatesHandlerItf& rootCertificatesHandler
 
     );
 
@@ -161,6 +164,14 @@ public:
      * @return Error.
      */
     Error SendUnitStatus(const UnitStatus& unitStatus) override;
+
+    /**
+     * Sends unit root certificates.
+     *
+     * @param unitRootCertificates unit root certificates.
+     * @return Error.
+     */
+    Error SendUnitRootCertificates(const UnitRootCertificates& unitRootCertificates) override;
 
     /**
      * Subscribes to cloud connection events.
@@ -303,6 +314,7 @@ private:
     launcher::EnvVarHandlerItf*                                    mEnvVarHandler {};
     iamclient::CertHandlerItf*                                     mCertHandler {};
     iamclient::ProvisioningItf*                                    mProvisioningHandler {};
+    rootcertificates::DesiredRootCertificatesHandlerItf*           mRootCertificatesHandler {};
     std::atomic_bool                                               mIsRunning {};
     SystemInfo                                                     mSystemInfo;
     std::mutex                                                     mSubscribersMutex;
