@@ -237,12 +237,13 @@ TEST_F(JournalAlertsTest, SendSystemAlertFiltered)
     entry.mSystemdUnit = "init.service";
     entry.mMessage     = "getty@tty1.service started";
 
-    EXPECT_CALL(mJournalAlerts.mJournal, GetEntry()).WillOnce(Return(entry));
+    EXPECT_CALL(mJournalAlerts.mJournal, GetEntry())
+        .WillOnce(DoAll(InvokeWithoutArgs(this, &JournalAlertsTest::NotifyAlertSent), Return(entry)));
     EXPECT_CALL(mSender, SendAlert(_)).Times(0);
 
     Start();
 
-    sleep(0);
+    WaitForAlert();
 
     Stop();
 }
@@ -351,11 +352,12 @@ TEST_F(JournalAlertsTest, RecoverJournalErrorOk)
         .WillRepeatedly(Return(std::string("cursor")));
 
     // Restore journal
-    EXPECT_CALL(mStorage, SetJournalCursor(String(""))).WillOnce(Return(ErrorEnum::eNone));
+    EXPECT_CALL(mStorage, SetJournalCursor(String("")))
+        .WillOnce(InvokeWithoutArgs(this, &JournalAlertsTest::NotifyAlertSent));
 
     Start();
 
-    sleep(0);
+    WaitForAlert();
 
     Stop();
 }
