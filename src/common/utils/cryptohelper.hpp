@@ -50,17 +50,17 @@ RetWithError<std::string> LoadRootCertificates(const iamclient::CertProviderItf&
     const String& rootCertType = cRootCertType);
 
 /**
- * Loads root certificates the same way gRPC/TLS does and calculates SHA-256 thumbnails.
+ * Loads root certificates the same way gRPC/TLS does and calculates SHA-256 fingerprints.
  *
  * @param certProvider certificate provider.
  * @param certLoader certificate loader.
  * @param cryptoProvider crypto provider.
- * @param[out] thumbnails SHA-256 thumbnails.
+ * @param[out] fingerprints SHA-256 fingerprints.
  * @param rootCertType certificate type of the trusted root certificate storage.
  * @return Error.
  */
-Error CalcRootCertThumbnails(const iamclient::CertProviderItf& certProvider, crypto::CertLoaderItf& certLoader,
-    crypto::x509::ProviderItf& cryptoProvider, Array<SHA256Thumbnail>& thumbnails,
+Error CalcRootCertFingerprints(const iamclient::CertProviderItf& certProvider, crypto::CertLoaderItf& certLoader,
+    crypto::x509::ProviderItf& cryptoProvider, Array<SHA256Fingerprint>& fingerprints,
     const String& rootCertType = cRootCertType);
 
 /**

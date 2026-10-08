@@ -53,18 +53,18 @@ std::string ConvertCertificatesToPEM(
 
 constexpr auto cMaxRootCerts = 8;
 
-Error HashCertificates(const Array<crypto::x509::Certificate>& certs, Array<SHA256Thumbnail>& thumbnails)
+Error HashCertificates(const Array<crypto::x509::Certificate>& certs, Array<SHA256Fingerprint>& fingerprints)
 {
     for (const auto& cert : certs) {
         unsigned char hash[SHA256_DIGEST_LENGTH];
 
         SHA256(cert.mRaw.Get(), static_cast<int>(cert.mRaw.Size()), hash);
 
-        if (auto err = thumbnails.EmplaceBack(); !err.IsNone()) {
+        if (auto err = fingerprints.EmplaceBack(); !err.IsNone()) {
             return AOS_ERROR_WRAP(err);
         }
 
-        if (auto err = thumbnails.Back().ByteArrayToHex(Array<uint8_t>(hash, SHA256_DIGEST_LENGTH)); !err.IsNone()) {
+        if (auto err = fingerprints.Back().ByteArrayToHex(Array<uint8_t>(hash, SHA256_DIGEST_LENGTH)); !err.IsNone()) {
             return AOS_ERROR_WRAP(err);
         }
     }
@@ -97,10 +97,10 @@ RetWithError<EVP_PKEY*> LoadPrivateKey(const std::string& keyURL)
     return {pkey, ErrorEnum::eNone};
 }
 
-Error CalcRootCertThumbnails(
-    const std::string& rootCertsPem, crypto::x509::ProviderItf& cryptoProvider, Array<SHA256Thumbnail>& thumbnails)
+Error CalcRootCertFingerprints(
+    const std::string& rootCertsPem, crypto::x509::ProviderItf& cryptoProvider, Array<SHA256Fingerprint>& fingerprints)
 {
-    thumbnails.Clear();
+    fingerprints.Clear();
 
     if (rootCertsPem.empty()) {
         return ErrorEnum::eNone;
@@ -117,7 +117,7 @@ Error CalcRootCertThumbnails(
         return AOS_ERROR_WRAP(err);
     }
 
-    return HashCertificates(*certs, thumbnails);
+    return HashCertificates(*certs, fingerprints);
 }
 
 } // namespace
@@ -184,12 +184,12 @@ RetWithError<std::string> LoadRootCertificates(const iamclient::CertProviderItf&
     }
 }
 
-Error CalcRootCertThumbnails(const iamclient::CertProviderItf& certProvider, crypto::CertLoaderItf& certLoader,
-    crypto::x509::ProviderItf& cryptoProvider, Array<SHA256Thumbnail>& thumbnails, const String& rootCertType)
+Error CalcRootCertFingerprints(const iamclient::CertProviderItf& certProvider, crypto::CertLoaderItf& certLoader,
+    crypto::x509::ProviderItf& cryptoProvider, Array<SHA256Fingerprint>& fingerprints, const String& rootCertType)
 {
     auto [rootCertsPem, err] = LoadRootCertificates(certProvider, certLoader, cryptoProvider, rootCertType);
     if (err.Is(ErrorEnum::eNotFound)) {
-        thumbnails.Clear();
+        fingerprints.Clear();
 
         return ErrorEnum::eNone;
     }
@@ -198,7 +198,7 @@ Error CalcRootCertThumbnails(const iamclient::CertProviderItf& certProvider, cry
         return AOS_ERROR_WRAP(err);
     }
 
-    return CalcRootCertThumbnails(rootCertsPem, cryptoProvider, thumbnails);
+    return CalcRootCertFingerprints(rootCertsPem, cryptoProvider, fingerprints);
 }
 
 std::string GetOpensslErrorString()

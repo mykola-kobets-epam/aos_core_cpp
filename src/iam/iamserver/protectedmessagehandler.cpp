@@ -365,10 +365,10 @@ grpc::Status ProtectedMessageHandler::GetRootCerts([[maybe_unused]] grpc::Server
         });
     }
 
-    SHA256ThumbnailArray thumbnails;
+    SHA256FingerprintArray fingerprints;
 
     if (auto err
-        = common::utils::CalcRootCertThumbnails(*GetCertProvider(), *mCertLoader, *mCryptoProvider, thumbnails);
+        = common::utils::CalcRootCertFingerprints(*GetCertProvider(), *mCertLoader, *mCryptoProvider, fingerprints);
         !err.IsNone()) {
         LOG_ERR() << "Get root certs failed: error=" << err;
 
@@ -377,8 +377,8 @@ grpc::Status ProtectedMessageHandler::GetRootCerts([[maybe_unused]] grpc::Server
         return grpc::Status::OK;
     }
 
-    for (const auto& thumbnail : thumbnails) {
-        response->add_root_cert_thumbnails(thumbnail.CStr());
+    for (const auto& fingerprint : fingerprints) {
+        response->add_root_cert_fingerprints(fingerprint.CStr());
     }
 
     return grpc::Status::OK;

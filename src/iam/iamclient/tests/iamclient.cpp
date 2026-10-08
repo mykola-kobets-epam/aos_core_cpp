@@ -281,7 +281,7 @@ public:
                     const auto& response = incomingMsg.get_root_certs_response();
 
                     OnGetRootCertsResponse(
-                        response.node_id(), ConvertFromProtoArray(response.root_cert_thumbnails()), response.error());
+                        response.node_id(), ConvertFromProtoArray(response.root_cert_fingerprints()), response.error());
                     mResponseCV.notify_all();
                 }
             }

@@ -103,7 +103,8 @@ private:
         const Array<uint8_t>& serial, const Error& error);
     Error SendGetCertTypesResponse(const provisionmanager::CertTypes& types, const Error& error);
     Error SendUpdateRootCertsResponse(const String& nodeID, const Error& error);
-    Error SendGetRootCertsResponse(const String& nodeID, const Array<SHA256Thumbnail>& thumbnails, const Error& error);
+    Error SendGetRootCertsResponse(
+        const String& nodeID, const Array<SHA256Fingerprint>& fingerprints, const Error& error);
 
     aos::iamclient::IdentProviderItf*      mIdentProvider      = nullptr;
     provisionmanager::ProvisionManagerItf* mProvisionManager   = nullptr;

@@ -416,12 +416,12 @@ Error IAMClient::ProcessGetRootCerts(const iamanager::v7::GetRootCertsRequest& r
 
     LOG_DBG() << "Process get root certs request: nodeID=" << nodeID;
 
-    SHA256ThumbnailArray thumbnails;
+    SHA256FingerprintArray fingerprints;
 
     auto err = AOS_ERROR_WRAP(
-        common::utils::CalcRootCertThumbnails(*mCertProvider, *mCertLoader, *mCryptoProvider, thumbnails));
+        common::utils::CalcRootCertFingerprints(*mCertProvider, *mCertLoader, *mCryptoProvider, fingerprints));
 
-    return SendGetRootCertsResponse(nodeID, thumbnails, err);
+    return SendGetRootCertsResponse(nodeID, fingerprints, err);
 }
 
 Error IAMClient::CheckCurrentNodeState(const std::optional<std::initializer_list<NodeState>>& allowedStates)
@@ -511,7 +511,7 @@ Error IAMClient::SendUpdateRootCertsResponse(const String& nodeID, const Error& 
 }
 
 Error IAMClient::SendGetRootCertsResponse(
-    const String& nodeID, const Array<SHA256Thumbnail>& thumbnails, const Error& error)
+    const String& nodeID, const Array<SHA256Fingerprint>& fingerprints, const Error& error)
 {
     iamanager::v7::IAMOutgoingMessages outgoingMsg;
     auto&                              response = *outgoingMsg.mutable_get_root_certs_response();
@@ -519,8 +519,8 @@ Error IAMClient::SendGetRootCertsResponse(
     response.set_node_id(nodeID.CStr());
 
     if (error.IsNone()) {
-        for (const auto& thumbnail : thumbnails) {
-            response.add_root_cert_thumbnails(thumbnail.CStr());
+        for (const auto& fingerprint : fingerprints) {
+            response.add_root_cert_fingerprints(fingerprint.CStr());
         }
     }
 
