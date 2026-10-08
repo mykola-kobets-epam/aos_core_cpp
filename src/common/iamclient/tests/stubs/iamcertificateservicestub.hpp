@@ -114,11 +114,11 @@ public:
         return mLastRootCerts;
     }
 
-    void SetRootCertThumbnails(const std::vector<std::string>& thumbnails)
+    void SetRootCertFingerprints(const std::vector<std::string>& fingerprints)
     {
         std::lock_guard lock {mMutex};
 
-        mRootCertThumbnails = thumbnails;
+        mRootCertFingerprints = fingerprints;
     }
 
     grpc::Status CreateKey([[maybe_unused]] grpc::ServerContext* context,
@@ -188,8 +188,8 @@ public:
 
         response->set_node_id(mLastNodeID);
 
-        for (const auto& thumbnail : mRootCertThumbnails) {
-            response->add_root_cert_thumbnails(thumbnail);
+        for (const auto& fingerprint : mRootCertFingerprints) {
+            response->add_root_cert_fingerprints(fingerprint);
         }
 
         if (mHasError) {
@@ -215,7 +215,7 @@ private:
     std::string                   mLastPassword;
     std::string                   mLastPemCert;
     std::vector<std::string>      mLastRootCerts;
-    std::vector<std::string>      mRootCertThumbnails;
+    std::vector<std::string>      mRootCertFingerprints;
 };
 
 #endif

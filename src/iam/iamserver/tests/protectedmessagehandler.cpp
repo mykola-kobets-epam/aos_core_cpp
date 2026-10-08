@@ -497,7 +497,7 @@ TEST_F(ProtectedMessageHandlerTest, GetRootCertsSucceeds)
                              << ", message = " << status.error_message();
 
     EXPECT_EQ(response.node_id(), "node0");
-    EXPECT_EQ(response.root_cert_thumbnails_size(), 0);
+    EXPECT_EQ(response.root_cert_fingerprints_size(), 0);
     EXPECT_EQ(response.error().aos_code(), static_cast<int>(ErrorEnum::eNone));
     EXPECT_TRUE(response.error().message().empty());
 }

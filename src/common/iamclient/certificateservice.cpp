@@ -169,11 +169,11 @@ Error CertificateService::UpdateRootCerts(
     }
 }
 
-Error CertificateService::GetRootCerts(const String& nodeID, Array<SHA256Thumbnail>& thumbnails)
+Error CertificateService::GetRootCerts(const String& nodeID, Array<SHA256Fingerprint>& fingerprints)
 {
     std::lock_guard lock {mMutex};
 
-    LOG_INF() << "Get root certificate thumbnails" << Log::Field("nodeID", nodeID);
+    LOG_INF() << "Get root certificate fingerprints" << Log::Field("nodeID", nodeID);
 
     try {
         auto ctx = std::make_unique<grpc::ClientContext>();
@@ -192,10 +192,10 @@ Error CertificateService::GetRootCerts(const String& nodeID, Array<SHA256Thumbna
             return Error(response.error().exit_code(), response.error().message().c_str());
         }
 
-        thumbnails.Clear();
+        fingerprints.Clear();
 
-        for (const auto& thumbnail : response.root_cert_thumbnails()) {
-            if (auto err = thumbnails.EmplaceBack(thumbnail.c_str()); !err.IsNone()) {
+        for (const auto& fingerprint : response.root_cert_fingerprints()) {
+            if (auto err = fingerprints.EmplaceBack(fingerprint.c_str()); !err.IsNone()) {
                 return AOS_ERROR_WRAP(err);
             }
         }

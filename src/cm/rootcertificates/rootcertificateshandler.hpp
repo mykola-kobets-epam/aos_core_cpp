@@ -27,7 +27,7 @@ public:
     virtual ~DesiredRootCertificatesHandlerItf() = default;
 
     /**
-     * Updates root certificates from desired unit root certificates and reports partial thumbnails
+     * Updates root certificates from desired unit root certificates and reports partial fingerprints
      * for updated nodes.
      *
      * @param desiredRootCerts desired unit root certificates.
@@ -36,7 +36,7 @@ public:
 };
 
 /**
- * Handles desired root certificate updates and reports unit root certificate thumbnails to the cloud.
+ * Handles desired root certificate updates and reports unit root certificate fingerprints to the cloud.
  */
 class RootCertificatesHandler : public DesiredRootCertificatesHandlerItf,
                                 private cloudconnection::ConnectionListenerItf,
@@ -69,7 +69,7 @@ public:
     Error Stop();
 
     /**
-     * Updates root certificates from desired unit root certificates and reports partial thumbnails
+     * Updates root certificates from desired unit root certificates and reports partial fingerprints
      * for updated nodes.
      *
      * @param desiredRootCerts desired unit root certificates.
@@ -81,7 +81,7 @@ private:
     void OnDisconnect() override;
     void OnNodeInfoChanged(const UnitNodeInfo& info) override;
 
-    Error CollectNodeRootCertThumbnails(const String& nodeID, NodeRootCertificates& nodeRootCertificates);
+    Error CollectNodeRootCertFingerprints(const String& nodeID, NodeRootCertificates& nodeRootCertificates);
     Error CollectUnitRootCertificates(
         const Array<StaticString<cIDLen>>& nodeIDs, bool isPartial, UnitRootCertificates& unitRootCertificates);
     Error SendAllUnitRootCertificates(bool isPartial);

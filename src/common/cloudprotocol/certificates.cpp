@@ -297,8 +297,8 @@ Error ToJSON(const UnitRootCertificates& unitRootCertificates, Poco::JSON::Objec
                 identity.mCodename = nodeRootCerts.mNodeID.CStr();
 
                 nodeJson->set("node", CreateAosIdentity(identity));
-                nodeJson->set("sha256Thumbnails",
-                    common::utils::ToJsonArray(nodeRootCerts.mSHA256Thumbnails, common::utils::ToStdString));
+                nodeJson->set("sha256Fingerprints",
+                    common::utils::ToJsonArray(nodeRootCerts.mSHA256Fingerprints, common::utils::ToStdString));
 
                 return nodeJson;
             }));

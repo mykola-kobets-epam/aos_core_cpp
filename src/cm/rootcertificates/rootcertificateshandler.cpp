@@ -181,14 +181,14 @@ void RootCertificatesHandler::OnNodeInfoChanged(const UnitNodeInfo& info)
     }
 }
 
-Error RootCertificatesHandler::CollectNodeRootCertThumbnails(
+Error RootCertificatesHandler::CollectNodeRootCertFingerprints(
     const String& nodeID, NodeRootCertificates& nodeRootCertificates)
 {
     if (auto err = nodeRootCertificates.mNodeID.Assign(nodeID); !err.IsNone()) {
         return AOS_ERROR_WRAP(err);
     }
 
-    if (auto err = mCertHandler->GetRootCerts(nodeID, nodeRootCertificates.mSHA256Thumbnails); !err.IsNone()) {
+    if (auto err = mCertHandler->GetRootCerts(nodeID, nodeRootCertificates.mSHA256Fingerprints); !err.IsNone()) {
         return AOS_ERROR_WRAP(err);
     }
 
@@ -206,9 +206,9 @@ Error RootCertificatesHandler::CollectUnitRootCertificates(
             return AOS_ERROR_WRAP(err);
         }
 
-        if (auto err = CollectNodeRootCertThumbnails(nodeID, unitRootCertificates.mNodeCertificates.Back());
+        if (auto err = CollectNodeRootCertFingerprints(nodeID, unitRootCertificates.mNodeCertificates.Back());
             !err.IsNone()) {
-            LOG_WRN() << "Can't get root cert thumbnails" << Log::Field("nodeID", nodeID) << Log::Field(err);
+            LOG_WRN() << "Can't get root cert fingerprints" << Log::Field("nodeID", nodeID) << Log::Field(err);
 
             unitRootCertificates.mNodeCertificates.PopBack();
             continue;
